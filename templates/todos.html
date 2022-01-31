@@ -13,9 +13,21 @@
         }
         return true;
     }
+
+    // Hide the Flashbag after 4 seconds.
+    document.addEventListener('DOMContentLoaded', (e) => {
+        $("[name='flashes']").delay(4000).slideUp(400, function () {
+            $(this).alert('close');
+        });
+    });
+
+
 </script>
 <div class="col-md-4 col-md-offset-4">
     <h1>Todo List:</h1>
+    {% for message in app.session.getFlashBag.get('message') %}
+    <div name="flashes" class="alert alert-success alert-dismissible show">{{ message }}</div>
+    {% endfor %}
     <table class="table table-striped">
         <th>#</th><th>User</th><th>Description</th><th></th><th></th>
         {% for todo in todos %}

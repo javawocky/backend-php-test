@@ -88,6 +88,8 @@ $app->post('/todo/add', function (Request $request) use ($app) {
     $sql = "INSERT INTO todos (user_id, description) VALUES (?, ?)";
     $app['db']->executeUpdate($sql,[$user_id,$description]);
 
+    $app['session']->getFlashBag()->add('message', 'Todo Added');
+
     return $app->redirect('/todo');
 });
 
@@ -131,6 +133,8 @@ $app->match('/todo/delete/{id}', function ($id) use ($app) {
     // Bug fix.  SQL Injectin and check a user is logged in and that the user owns the todo.
     $sql = "DELETE FROM todos WHERE id = ? and user_id = ?";
     $app['db']->executeUpdate($sql,[$id,$user['id']]);
+
+    $app['session']->getFlashBag()->add('message', 'Todo '.$id.' has been deleted.');
 
     return $app->redirect('/todo');
 });
