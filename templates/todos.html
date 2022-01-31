@@ -40,7 +40,7 @@
                     </a>
                 </td>
                 <td>
-                    <form method="post" action="{{ app.request.baseurl }}/todo/togglecomplete/{{ todo.id }}">
+                    <form method="post" action="{{ app.request.baseurl }}/todo/togglecomplete/{{ todo.id }}?page={{pager.getcurrentpage}}">
                         {% if todo.completed %}
                         <button type="submit" class="btn btn-xs btn-success"><span class="glyphicon glyphicon-check glyphicon-white"></span></button>
                         {% else %}
@@ -66,6 +66,21 @@
             </form>
         </tr>
     </table>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item {% if pager.hasprevious == false %}disabled{% endif %}">
+                <a class="page-link"  {% if pager.hasprevious == false %} style="pointer-events:none; cursor:default;"{% endif %}
+                   href="{{ app.request.baseurl }}/todo?page={{pager.getCurrentPage-1}}">Previous</a>
+            </li>
+            {% for i in 0..pager.getnumberofpages-1 %}
+            <li class="page-item {% if i == pager.getCUrrentPage-1 %}active{% endif %}"><a class="page-link" href="{{ app.request.baseurl }}/todo?page={{i+1}}">{{i+1}}</a></li>
+            {% endfor %}
+            <li class="page-item {% if pager.hasnext == false %}disabled{% endif %}">
+                <a class="page-link" {% if pager.hasnext == false %} style="pointer-events:none; cursor:default;"{% endif %}
+                   href="{{ app.request.baseurl }}/todo?page={{pager.getCurrentPage+1}}">Next</a>
+            </li>
+        </ul>
+    </nav>
     <div id="error_message_div" class="alert alert-danger alert-dismissible fade show">
         <span id="error_message"></span>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
