@@ -7,7 +7,7 @@
         <th>#</th><th>User</th><th>Description</th><th></th><th>JSON</th>
         <tr>
             <td>{{ todo.id }}</td>
-            <td>{{ todo.user_id }}</td>
+            <td>{{ todo.userid }}</td>
             <td>{{ todo.description }}</td>
             <td>
                 <form method="post" action="{{ app.request.baseurl }}/todo/delete/{{ todo.id }}">

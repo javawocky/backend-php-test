@@ -19,14 +19,13 @@ $app->get('/', function () use ($app) {
     ]);
 });
 
-
 $app->match('/login', function (Request $request) use ($app) {
     $username = $request->get('username');
     $password = $request->get('password');
 
     if ($username) {
-        $sql = "SELECT * FROM users WHERE username = ? and password = ?";
-        $user = $app['db']->fetchAssoc($sql, [$username, $password]);
+        $userService = new UserService($app);
+        $user = $userService->fetchByUsernameAndPassword($username, $password);
 
         if ($user){
             $app['session']->set('user', $user);
@@ -49,16 +48,16 @@ $app->get('/todo/{id}', function ($id) use ($app) {
         return $app->redirect('/login');
     }
 
-    if ($id){
-        $sql = "SELECT * FROM todos WHERE id = ? and user_id = ?";
-        $todo = $app['db']->fetchAssoc($sql,[$id, $user['id']]);
+    $todoService = new TodoService($app['db']);
 
+    if ($id){
+        $todo = $todoService->fetchByIdAndUser($id, $user['id']);
         return $app['twig']->render('todo.html', [
             'todo' => $todo,
         ]);
     } else {
-        $sql = "SELECT * FROM todos WHERE user_id = ?";
-        $todos = $app['db']->fetchAll($sql,[$user['id']]);
+
+        $todos = $todoService->fetchAllByUser($user['id']);
 
         $page = $app['request']->get('page') !== null ? $app['request']->get('page') : 1 ;
         $pager = new Pager(ITEMS_PER_PAGE, count($todos));
@@ -79,7 +78,6 @@ $app->post('/todo/add', function (Request $request) use ($app) {
         return $app->redirect('/login');
     }
 
-    $user_id = $user['id'];
     $description = $request->get('description');
 
     // Do a server side validate in case the user trys bypassing the javascript validation.
@@ -87,8 +85,12 @@ $app->post('/todo/add', function (Request $request) use ($app) {
         return $app->redirect('/todo');
     }
 
-    $sql = "INSERT INTO todos (user_id, description) VALUES (?, ?)";
-    $app['db']->executeUpdate($sql,[$user_id,$description]);
+    $todoService = new TodoService($app['db']);
+
+    $todo = new Todo();
+    $todo->setUserId($user['id']);
+    $todo->setDescription($description);
+    $todoService->add($todo);
 
     $app['session']->getFlashBag()->add('message', 'Todo Added');
 
@@ -100,12 +102,11 @@ $app->match('/todo/togglecomplete/{id}', function ($id) use ($app) {
         return $app->redirect('/login');
     }
 
+    $todoService = new TodoService($app['db']);
+
     $page = $app['request']->get('page') !== null ? $app['request']->get('page') : 1 ;
 
-    // Bug fix - SQL injection.
-    $sql = "UPDATE todos SET completed = NOT completed WHERE id = ? and user_id = ?";
-    $app['db']->executeUpdate($sql,[$id,$user['id']]);
-
+    $todoService->toggleCompleted($id, $user['id']);
     return $app->redirect('/todo?page='.$page);
 });
 
@@ -118,12 +119,16 @@ $app->match('/todo/{id}/json', function ($id) use ($app) {
         return new JsonResponse(['error' => 'Please provide a valid Todo ID'], 400);
     }
 
-    $sql = "SELECT * FROM todos WHERE id = ? and user_id = ?";
-    $todo = $app['db']->fetchAssoc($sql,[$id,$user['id']]);
+    $todoService = new TodoService($app['db']);
 
-    if($todo === false) {
+    $todoEntity = $todoService->fetchByIdAndUser($id,$user['id']);
+    if($todoEntity === false) {
         return new JsonResponse(['error' => 'Todo not found'], 404);
     }
+
+    $todo['id'] = $todoEntity->getId();
+    $todo['description'] = $todoEntity->getDescription();
+    $todo['completed'] = $todoEntity->isCompleted();
 
     $response = new JsonResponse();
     $response->setData($todo);
@@ -135,8 +140,9 @@ $app->match('/todo/delete/{id}', function ($id) use ($app) {
         return $app->redirect('/login');
     }
 
-    $sql = "DELETE FROM todos WHERE id = ? and user_id = ?";
-    $app['db']->executeUpdate($sql,[$id,$user['id']]);
+    $todoService = new TodoService($app['db']);
+
+    $todoService->deleteByIdAndUser($id, $user['id']);
 
     $app['session']->getFlashBag()->add('message', 'Todo '.$id.' has been deleted.');
 
